@@ -1,0 +1,114 @@
+#!/bin/bash
+# Author = Jonathan Wheeler
+# Date = 5 Nov 2013
+
+# What is this all about?
+class="8th Grade Algebra"
+
+# How many columns are there?
+total_columns=`awk 'END {print NF}' quiz.txt`
+
+# How many columns are there for the students
+students=`expr $total_columns - 2`	
+# Uncomment the following line if you want to see how many students are being processed
+echo "Total students: " $students
+
+# Where is the possible score listed		
+finalcol=$total_columns	
+
+# Where is all the date information
+firstcol=1	
+
+# Does the first line in the input files describe what each column means?
+header=true 	
+
+# Does the last line of the file include weight information?
+footer=false	
+
+if [ ! -d outfiles ]; then
+  mkdir outfiles
+fi
+
+if [ !footer ]
+then
+  # Create an array with the weights of each file. Put the file first.
+  declare -a infiles=('quiz.txt' 'test.txt' 'hw.txt')
+else
+  # TODO Write code to extract weights of each category from end of file.
+  echo "No category weights available"
+fi
+
+function midterm_score () {
+  echo -e "\n\n$2\n"
+  echo -e ======="\tmidterm\t"=======
+
+  # Run the awk script to display student grade information and totals
+  awk -v firstcol=$firstcol -v studentcol=$1 -v finalcol=$finalcol \
+      '($firstcol=="midterm") {print $firstcol "\t" $studentcol "\t" $finalcol}		\
+    ($firstcol=="midterm") {score+=$studentcol; possible+=$finalcol} 	\
+      END{print "----\t----\t----\n"					\
+      "total\t"score"/"possible"\t"(score*100/possible)-(score*10000/possible)%1/100"%"} ' test.txt
+}
+
+function final_score () {
+  echo -e "\n\n$2\n"
+  echo -e ======="\tfinal\t"=======
+
+  # Run the awk script to display student grade information and totals
+  awk -v firstcol=$firstcol -v studentcol=$1 -v finalcol=$finalcol \
+      '($firstcol=="final") {print $firstcol "\t" $studentcol "\t" $finalcol}		\
+    ($firstcol=="final") {score+=$studentcol; possible+=$finalcol} 	\
+      END{print "----\t----\t----\n"					\
+      "total\t"score"/"possible"\t"(score*100/possible)-(score*10000/possible)%1/100"%"} ' test.txt
+}
+function student_score () {
+  echo -e "\n\n$2\n"
+#  echo -e "++++++\t++++++\t++++++\n+\t$2\t     +\n++++++\t++++++\t++++++"
+  for file in ${infiles[@]}
+  do
+    # Print the category
+    echo -e ======="\t${file%%.txt}\t"=======
+
+    # Run the awk script to display student grade information and totals
+    awk -v firstcol=$firstcol -v studentcol=$1 -v finalcol=$finalcol \
+        -v startdate=$3	-v enddate=$4 \
+	'($firstcol>=startdate && $firstcol<=enddate) {print $firstcol "\t" $studentcol "\t" $finalcol}		\
+      ($studentcol!="x" && $firstcol>=startdate && $firstcol<=enddate) {score+=$studentcol; possible+=$finalcol} 	\
+	END{print "----\t----\t----\n"					\
+	"total\t"score"/"possible"\t"(score*100/possible)-(score*10000/possible)%1/100"%"} ' $file
+    # I pulled a little voodoo magic with the algebra in the last line to get
+    # precision of two after the decimal point. If I wanted to be cleaner I would
+    # either use bc utility or look up the syntax a bit better for awk's
+    # precision.
+    echo ""
+  done
+  echo $2 Overall:
+  cat ${infiles[@]} | awk -v studentcol=$1 -v finalcol=$finalcol -v \
+  firstcol=$firstcol -v startdate=$3 -v enddate=$4	\
+  '($studentcol!="x" && $firstcol>=startdate && $firstcol<=enddate) { score+=$studentcol; possible+=$finalcol} 			\
+      END{print "total\t"score"/"possible"\t"(score*100/possible)-(score*10000/possible)%1/100"%"} ' 
+}
+
+for i in $(seq 1 $students) #iterate over students
+do
+  # Which column represents this student's work?
+  studentcol=$(expr $firstcol + $i) 
+  name=`awk -v studentcol=$studentcol 'NR==1 {print $studentcol}' ${infiles[1]}`
+  # Uncomment the following line if you want to see progress
+  #echo "processing" $name
+  # Generate a report for this student based on the file that we are looking at
+  echo $name > outfiles/$name.txt
+  echo $class >> outfiles/$name.txt
+  date >> outfiles/$name.txt
+  echo -e "\na = student absent\nm = assignment missing\nx = student exempt" >>\
+  outfiles/$name.txt
+  student_score $studentcol "GP1" 130926 131105 >> outfiles/$name.txt
+  student_score $studentcol "GP2" 131106 140116 >> outfiles/$name.txt
+  midterm_score $studentcol "GP3" >> outfiles/$name.txt
+  student_score $studentcol "GP4" 140115 140320 >> outfiles/$name.txt
+  student_score $studentcol "GP5" 140321 140621 >> outfiles/$name.txt
+  final_score $studentcol "GP6" >> outfiles/$name.txt
+done # Finish iterating over students
+
+tail -n1 outfiles/*
+

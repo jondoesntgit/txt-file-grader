@@ -1,0 +1,29 @@
+#!/bin/bash
+
+class="Quantum Mechanics"
+echo "$class Grade"
+
+hwscore=`cat homework.txt | awk '{sum+=$2} END {print sum}'`
+hwpossible=`cat homework.txt | awk '{sum+=$3} END {print sum}'`
+hwpercent=`echo "scale=4;$hwscore/$hwpossible" | bc`
+echo "HW: $hwscore/$hwpossible = $hwpercent"
+
+wsscore=`cat worksheet.txt | awk '{sum+=$2} END {print sum}'`
+wspossible=`cat worksheet.txt | awk '{sum+=$3} END {print sum}'`
+wspercent=`echo "scale=4;$wsscore/$wspossible" | bc`
+echo "WS: $wsscore/$wspossible = $wspercent"
+
+quizscore=`cat quiz.txt | awk '{sum+=$2} END {print sum}'`
+quizpossible=`cat quiz.txt | awk '{sum+=$3} END {print sum}'`
+quizpercent=`echo "scale=4;$quizscore/$quizpossible" | bc`
+echo "QZ: $quizscore/$quizpossible = $quizpercent"
+
+quizweight=.50
+hwweight=.30
+wsweight=.20
+
+grade=`echo "scale=4; ($quizweight*$quizpercent+$hwweight*$hwpercent+$wsweight*$wspercent)/($quizweight+$hwweight+$wsweight)" | bc`
+
+grade2=`echo "scale=4; ($quizweight*$quizscore+$hwweight*$hwscore+$wsweight*$wsscore)/($quizweight*$quizpossible+$hwweight*$hwpossible+$wsweight*$wspossible)" | bc`
+
+echo -e "\nGRADE: $grade"

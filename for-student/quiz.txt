@@ -1,0 +1,7 @@
+name	credit	possible
+Q8	34	40
+Q9	52	60
+10	46	50
+Midterm	43	50
+Q11	44	50
+Final	83	90
